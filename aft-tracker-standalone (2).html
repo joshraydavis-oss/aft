@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>T-Minus: AFT</title>
+<style>
+  :root{
+    --bg:#101211; --panel:#1B1F1C; --panel2:#20241F; --line:#2A2F2B;
+    --ink:#EAEDEA; --soft:#8A9089; --olive:#9FC26E; --amber:#E0A83A;
+    --red:#D9564A; --green:#4FBE7A;
+    --mono:'SFMono-Regular',Menlo,Consolas,monospace;
+    --disp:'Oswald','Helvetica Neue',Impact,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);}
+  body{color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    min-height:100vh;-webkit-font-smoothing:antialiased;}
+  .page{max-width:620px;margin:0 auto;padding:20px 16px 70px;}
+
+  .note{background:#16281B;border:1px solid #2E4A34;border-radius:8px;padding:10px 14px;
+    font-size:11.5px;color:#C7D4B8;margin-bottom:16px;line-height:1.5;}
+
+  .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+  .head h1{font-family:var(--disp);font-weight:600;font-size:24px;margin:0;letter-spacing:.02em;
+    text-transform:uppercase;}
+  .head .tag{font-size:11.5px;color:var(--soft);margin-top:2px;}
+  .gear{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:9px 13px;
+    font-size:11px;color:var(--olive);cursor:pointer;font-weight:600;letter-spacing:.04em;}
+
+  .clock{background:#0B0D0B;border-radius:12px;padding:20px;text-align:center;
+    box-shadow:inset 0 0 0 1px #202420;margin-bottom:6px;}
+  .clock .lab{font-size:11px;letter-spacing:.15em;color:var(--olive);margin-bottom:12px;font-weight:600;}
+  .digits{display:flex;justify-content:center;gap:12px;}
+  .dg .n{font-family:var(--mono);font-size:40px;font-weight:700;color:var(--olive);line-height:1;}
+  .dg .l{font-size:10px;letter-spacing:.1em;color:var(--soft);margin-top:5px;}
+  .clock .date{margin-top:14px;font-size:12px;color:var(--soft);}
+  .clock .date b{color:var(--ink);cursor:pointer;border-bottom:1px dotted var(--soft);}
+
+  h2.sec{font-family:var(--disp);font-size:15px;font-weight:600;margin:26px 0 10px;
+    letter-spacing:.03em;text-transform:uppercase;color:var(--ink);}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;}
+  .row{display:flex;justify-content:space-between;align-items:baseline;}
+  .big{font-family:var(--mono);font-size:28px;font-weight:700;}
+  .unit{font-size:10.5px;color:var(--soft);letter-spacing:.05em;}
+  .tgt{text-align:right;font-size:11px;color:var(--soft);cursor:pointer;}
+  .tgt b{color:var(--olive);}
+  .sub{margin-top:8px;font-size:11.5px;color:var(--soft);line-height:1.45;}
+  .inrow{display:flex;gap:8px;margin-top:12px;}
+  .inrow input{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:6px;
+    padding:11px;color:var(--ink);font-size:16px;font-family:inherit;min-width:0;}
+  .inrow button{background:var(--olive);color:#101211;border:none;border-radius:6px;padding:0 20px;
+    font-weight:700;font-size:12px;cursor:pointer;letter-spacing:.05em;}
+  .inrow button:active{opacity:.75;}
+
+  .ev{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:10px;}
+  .ev-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .ev-name{font-family:var(--disp);font-size:14px;font-weight:600;letter-spacing:.02em;
+    text-transform:uppercase;padding-top:2px;}
+  .ev-val{font-family:var(--mono);font-size:18px;font-weight:700;text-align:right;white-space:nowrap;}
+  .ev-pct{font-size:10px;color:var(--soft);text-align:right;margin-top:1px;}
+  .ev-tgt{font-size:10.5px;color:var(--soft);margin-top:7px;cursor:pointer;}
+  .ev-tgt b{color:var(--olive);}
+  .track{height:8px;background:var(--panel2);border:1px solid var(--line);border-radius:4px;
+    overflow:hidden;margin-top:8px;}
+  .fill{height:100%;background:linear-gradient(90deg,#5C7A45,var(--olive));transition:width .3s;}
+  .hist{font-size:10.5px;color:var(--soft);margin-top:8px;}
+  .del{color:var(--red);font-size:10.5px;cursor:pointer;margin-left:8px;}
+
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:flex-end;z-index:50;}
+  .modal{background:#161915;width:100%;max-width:620px;margin:0 auto;border-radius:14px 14px 0 0;
+    padding:20px 20px 30px;max-height:88vh;overflow-y:auto;}
+  .modal h3{font-family:var(--disp);font-size:16px;margin:0 0 6px;text-transform:uppercase;letter-spacing:.03em;}
+  .modal label{display:block;font-size:11px;color:var(--soft);margin:14px 0 5px;}
+  .modal input{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;
+    padding:12px;color:var(--ink);font-size:16px;font-family:inherit;}
+  .macts{display:flex;gap:10px;margin-top:20px;}
+  .macts button{flex:1;border:none;border-radius:8px;padding:13px;font-weight:700;font-size:13px;
+    cursor:pointer;letter-spacing:.04em;}
+  .bp{background:var(--olive);color:#101211;}
+  .bs{background:var(--panel2);color:var(--ink);border:1px solid var(--line)!important;}
+
+  #toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#1B1F1C;
+    border:1px solid var(--line);border-radius:8px;padding:11px 16px;font-size:12.5px;z-index:100;
+    opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%;text-align:center;}
+  #toast.show{opacity:1;}
+  #toast.ok{color:var(--green);border-color:#2E4A34;}
+  #toast.err{color:var(--red);border-color:#4A2A2A;}
+
+  .warn{background:#2A1E12;border:1px solid #5A3A1E;color:#E0A83A;border-radius:8px;
+    padding:12px 14px;font-size:12px;line-height:1.5;margin-bottom:16px;display:none;}
+  .warn.show{display:block;}
+
+  footer{text-align:center;font-size:11px;color:var(--soft);padding-top:22px;margin-top:14px;
+    border-top:1px solid var(--line);line-height:1.7;}
+  footer a{color:var(--soft);cursor:pointer;text-decoration:underline;}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="warn" id="warn"></div>
+
+  <div class="note">
+    Tracks <b>your logged numbers against your own targets</b> — not an official Army AFT point score.
+    Waist-to-height ratio is compared against the Army's 0.550 standard.
+  </div>
+
+  <div class="head">
+    <div><h1>T-Minus: AFT</h1><div class="tag">Personal readiness tracker</div></div>
+    <div class="gear" id="gearBtn">⚙ SETTINGS</div>
+  </div>
+
+  <div class="clock">
+    <div class="lab">TIME TO TEST DAY</div>
+    <div class="digits" id="digits"></div>
+    <div class="date">Test date: <b id="dateLab">not set — tap to set</b></div>
+  </div>
+
+  <h2 class="sec">Weight</h2>
+  <div class="card">
+    <div class="row">
+      <div><span class="big" id="wNow">--</span> <span class="unit">LBS</span></div>
+      <div class="tgt" id="wTgt">target not set</div>
+    </div>
+    <svg id="wSpark" viewBox="0 0 300 150" width="100%" height="150" style="margin-top:10px;overflow:visible"></svg>
+    <div class="sub" id="wNote">Log entries to see your trend.</div>
+    <div class="inrow">
+      <input type="number" id="wIn" placeholder="Today's weight (lbs)" step="0.1" inputmode="decimal">
+      <button id="wBtn">LOG</button>
+    </div>
+  </div>
+
+  <h2 class="sec">Waist / Height Ratio</h2>
+  <div class="card">
+    <div class="row">
+      <div><span class="big" id="rNow">--</span> <span class="unit">RATIO</span></div>
+      <div class="tgt" id="rTgt">target not set</div>
+    </div>
+    <svg id="rSpark" viewBox="0 0 300 150" width="100%" height="150" style="margin-top:10px;overflow:visible"></svg>
+    <div class="sub" id="rNote">Set height in Settings, then log a waist measurement.</div>
+    <div class="inrow">
+      <input type="number" id="waistIn" placeholder="Today's waist (in)" step="0.1" inputmode="decimal">
+      <button id="waistBtn">LOG</button>
+    </div>
+  </div>
+
+  <h2 class="sec">Readiness Profile</h2>
+  <div class="card" style="padding:10px 12px 14px">
+    <svg id="radar" viewBox="0 0 260 250" width="100%" height="250" style="overflow:visible"></svg>
+    <div style="display:flex;justify-content:center;gap:18px;font-size:10px;color:var(--soft);margin-top:2px">
+      <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#4A5A48;margin-right:5px;vertical-align:-1px"></span>your target</span>
+      <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#9FC26E;margin-right:5px;vertical-align:-1px"></span>current</span>
+    </div>
+  </div>
+
+  <h2 class="sec">Events</h2>
+  <div id="events"></div>
+
+  <footer>
+    Saved in this browser on this device<br>
+    <a id="exportBtn">Export backup</a> · <a id="importBtn">Restore backup</a>
+  </footer>
+</div>
+
+<div id="modal"></div>
+<div id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+
+var EVENTS = [
+  {key:'deadlift', name:'3-Rep Max Deadlift',    unit:'lbs',   higher:true},
+  {key:'pushup',   name:'Hand-Release Push-up',  unit:'reps',  higher:true},
+  {key:'sdc',      name:'Sprint-Drag-Carry',     unit:'mm:ss', higher:false},
+  {key:'plank',    name:'Plank',                 unit:'mm:ss', higher:true},
+  {key:'row',      name:'5,000m Row',            unit:'mm:ss', higher:false}
+];
+var ARMY_STD = 0.550;
+var KEY = 'aft-tracker-v3';
+
+var data = {
+  testDate:null, height:null, targetWeight:null, targetRatio:null,
+  targets:{}, weightLog:[], waistLog:[], eventLogs:{}
+};
+
+var canSave = true;
+
+/* ---------- storage (browser localStorage) ---------- */
+function save(){
+  if(!canSave) return false;
+  try{
+    window.localStorage.setItem(KEY, JSON.stringify(data));
+    return true;
+  }catch(e){
+    console.error('save failed', e);
+    toast('⚠ Could not save: ' + (e.message || e), true);
+    return false;
+  }
+}
+function load(){
+  try{
+    var raw = window.localStorage.getItem(KEY);
+    if(!raw) return;
+    var p = JSON.parse(raw);
+    Object.keys(p).forEach(function(k){ data[k] = p[k]; });
+    if(!data.targets) data.targets = {};
+    if(!data.eventLogs) data.eventLogs = {};
+    if(!data.weightLog) data.weightLog = [];
+    if(!data.waistLog) data.waistLog = [];
+  }catch(e){ console.error('load failed', e); }
+}
+function checkStorage(){
+  try{
+    window.localStorage.setItem('__t','1');
+    window.localStorage.removeItem('__t');
+    return true;
+  }catch(e){ return false; }
+}
+
+/* ---------- ui helpers ---------- */
+var toastT;
+function toast(msg, isErr){
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + (isErr?'err':'ok');
+  clearTimeout(toastT);
+  toastT = setTimeout(function(){ el.className=''; }, isErr?5000:1500);
+}
+function esc(s){ return String(s).replace(/[&<>"']/g, function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function today(){
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function toSec(s){
+  if(typeof s === 'number') return s;
+  var p = String(s).split(':');
+  if(p.length===2) return (parseInt(p[0],10)||0)*60 + (parseFloat(p[1])||0);
+  return parseFloat(s)||0;
+}
+function isTime(u){ return u==='mm:ss'; }
+
+/* ---------- render ---------- */
+function renderClock(){
+  var lab=document.getElementById('dateLab'), dg=document.getElementById('digits');
+  if(!data.testDate){
+    lab.textContent='not set — tap to set';
+    dg.innerHTML='<div class="dg"><div class="n">--</div><div class="l">DAYS</div></div>';
+    return;
+  }
+  var t=new Date(data.testDate+'T00:00:00');
+  lab.textContent=t.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  var diff=t-new Date();
+  if(diff<0){ dg.innerHTML='<div class="dg"><div class="n" style="font-size:19px">TEST DAY PASSED</div></div>'; return; }
+  var d=Math.floor(diff/86400000), h=Math.floor(diff/3600000)%24, m=Math.floor(diff/60000)%60;
+  dg.innerHTML=
+    '<div class="dg"><div class="n">'+d+'</div><div class="l">DAYS</div></div>'+
+    '<div class="dg"><div class="n">'+String(h).padStart(2,'0')+'</div><div class="l">HRS</div></div>'+
+    '<div class="dg"><div class="n">'+String(m).padStart(2,'0')+'</div><div class="l">MIN</div></div>';
+}
+
+function spark(id, vals, refs, dates, fmt){
+  var svg=document.getElementById(id);
+  if(!vals.length){
+    svg.innerHTML='<text x="50%" y="50%" fill="#6B776C" font-size="11" font-family="monospace" text-anchor="middle">No entries yet</text>';
+    return;
+  }
+  if(vals.length<2){
+    svg.innerHTML='<text x="50%" y="50%" fill="#6B776C" font-size="11" font-family="monospace" text-anchor="middle">Log one more entry to draw the trend</text>';
+    return;
+  }
+  fmt = fmt || function(v){ return v.toFixed(1); };
+  var all=vals.concat(refs.map(function(r){return r.v;}));
+  var min=Math.min.apply(null,all), max=Math.max.apply(null,all);
+  var pad=(max-min)*0.18||1; min-=pad; max+=pad;
+  var range=max-min||1;
+  var W=300,H=150, L=34, R=8, T=10, B=28;
+  var plotW=W-L-R, plotH=H-T-B;
+  function x(i){ return L + (i/(vals.length-1))*plotW; }
+  function y(v){ return T + plotH - ((v-min)/range)*plotH; }
+
+  var out='';
+  // horizontal gridlines + y labels
+  var ticks=4;
+  for(var g=0; g<=ticks; g++){
+    var gv = min + (range*g/ticks);
+    var gy = y(gv);
+    out+='<line x1="'+L+'" y1="'+gy.toFixed(1)+'" x2="'+(W-R)+'" y2="'+gy.toFixed(1)+'" stroke="#242A25" stroke-width="1"/>';
+    out+='<text x="'+(L-5)+'" y="'+(gy+3).toFixed(1)+'" fill="#6B776C" font-size="8" font-family="monospace" text-anchor="end">'+fmt(gv)+'</text>';
+  }
+  // reference lines
+  refs.forEach(function(r){
+    var ry=y(r.v);
+    out+='<line x1="'+L+'" y1="'+ry.toFixed(1)+'" x2="'+(W-R)+'" y2="'+ry.toFixed(1)+'" stroke="'+r.c+'" stroke-width="1.2" stroke-dasharray="4,3"/>';
+    out+='<text x="'+(W-R)+'" y="'+(ry-4).toFixed(1)+'" fill="'+r.c+'" font-size="8" font-family="monospace" text-anchor="end">'+r.l+'</text>';
+  });
+  // area fill
+  var areaPts = vals.map(function(v,i){ return x(i).toFixed(1)+','+y(v).toFixed(1); }).join(' ');
+  out+='<polygon points="'+L+','+(T+plotH)+' '+areaPts+' '+(L+plotW)+','+(T+plotH)+'" fill="rgba(159,194,110,0.10)"/>';
+  // line
+  out+='<polyline points="'+areaPts+'" fill="none" stroke="#9FC26E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
+  // points
+  vals.forEach(function(v,i){
+    var isLast = i===vals.length-1;
+    out+='<circle cx="'+x(i).toFixed(1)+'" cy="'+y(v).toFixed(1)+'" r="'+(isLast?3.6:2.4)+'" fill="'+(isLast?'#EAEDEA':'#9FC26E')+'" stroke="#101211" stroke-width="1"/>';
+  });
+  // latest value label
+  var lastV=vals[vals.length-1];
+  out+='<text x="'+(x(vals.length-1)-4).toFixed(1)+'" y="'+(y(lastV)-8).toFixed(1)+'" fill="#EAEDEA" font-size="9.5" font-family="monospace" text-anchor="end">'+fmt(lastV)+'</text>';
+  // x axis dates (first + last)
+  if(dates && dates.length===vals.length){
+    out+='<text x="'+L+'" y="'+(H-4)+'" fill="#6B776C" font-size="8" font-family="monospace">'+shortDate(dates[0])+'</text>';
+    out+='<text x="'+(W-R)+'" y="'+(H-4)+'" fill="#6B776C" font-size="8" font-family="monospace" text-anchor="end">'+shortDate(dates[dates.length-1])+'</text>';
+  }
+  svg.innerHTML=out;
+}
+
+function shortDate(iso){
+  if(!iso) return '';
+  var p=String(iso).split('-');
+  if(p.length!==3) return iso;
+  return parseInt(p[1],10)+'/'+parseInt(p[2],10);
+}
+
+function renderRadar(){
+  var svg=document.getElementById('radar');
+  if(!svg) return;
+  var cx=130, cy=125, maxR=78;
+  var n=EVENTS.length;
+  var any=false;
+  var pts100=[], ptsCur=[], labels='', axes='';
+  EVENTS.forEach(function(ev,i){
+    var ang=(-90 + (360/n)*i) * Math.PI/180;
+    var x1=cx+maxR*Math.cos(ang), y1=cy+maxR*Math.sin(ang);
+    pts100.push(x1.toFixed(1)+','+y1.toFixed(1));
+    axes+='<line x1="'+cx+'" y1="'+cy+'" x2="'+x1.toFixed(1)+'" y2="'+y1.toFixed(1)+'" stroke="#242A25" stroke-width="1"/>';
+    var p=pct(ev);
+    if(p!==null) any=true;
+    var r=(p===null?0:Math.min(p,100)/100)*maxR;
+    ptsCur.push((cx+r*Math.cos(ang)).toFixed(1)+','+(cy+r*Math.sin(ang)).toFixed(1));
+    var lx=cx+(maxR+20)*Math.cos(ang), ly=cy+(maxR+16)*Math.sin(ang);
+    var anchor = Math.abs(Math.cos(ang))<0.3 ? 'middle' : (Math.cos(ang)>0?'start':'end');
+    var short = ev.name.split(' ').slice(-1)[0].toUpperCase();
+    if(ev.key==='deadlift') short='DEADLIFT';
+    if(ev.key==='pushup') short='PUSH-UP';
+    if(ev.key==='sdc') short='SDC';
+    if(ev.key==='row') short='ROW';
+    labels+='<text x="'+lx.toFixed(1)+'" y="'+ly.toFixed(1)+'" fill="#C7D4B8" font-size="9" text-anchor="'+anchor+'">'+short+'</text>';
+    if(p!==null){
+      labels+='<text x="'+lx.toFixed(1)+'" y="'+(ly+10).toFixed(1)+'" fill="#6B776C" font-size="8" font-family="monospace" text-anchor="'+anchor+'">'+Math.round(p)+'%</text>';
+    }
+  });
+  var rings='';
+  [0.33,0.66,1].forEach(function(f){
+    var p=EVENTS.map(function(ev,i){
+      var ang=(-90 + (360/n)*i)*Math.PI/180;
+      return (cx+maxR*f*Math.cos(ang)).toFixed(1)+','+(cy+maxR*f*Math.sin(ang)).toFixed(1);
+    }).join(' ');
+    rings+='<polygon points="'+p+'" fill="none" stroke="#242A25" stroke-width="1"/>';
+  });
+  svg.innerHTML = rings + axes +
+    '<polygon points="'+pts100.join(' ')+'" fill="none" stroke="#4A5A48" stroke-width="1.4" stroke-dasharray="4,3"/>' +
+    (any?'<polygon points="'+ptsCur.join(' ')+'" fill="rgba(159,194,110,0.25)" stroke="#9FC26E" stroke-width="2"/>':'') +
+    labels +
+    (any?'':'<text x="'+cx+'" y="'+cy+'" fill="#6B776C" font-size="10" text-anchor="middle">Set targets and log results</text>');
+}
+
+function renderWeight(){
+  var log=data.weightLog;
+  var latest=log.length?log[log.length-1].v:null;
+  document.getElementById('wNow').textContent = latest!==null?latest.toFixed(1):'--';
+  document.getElementById('wTgt').innerHTML = data.targetWeight
+    ? 'target <b>'+data.targetWeight+'</b> lbs'+(latest!==null?' · <b>'+Math.abs(latest-data.targetWeight).toFixed(1)+'</b> to go':'')
+    : 'target not set — tap to set';
+  spark('wSpark', log.map(function(e){return e.v;}),
+    data.targetWeight?[{v:data.targetWeight,l:'TARGET '+data.targetWeight,c:'#5A6B52'}]:[],
+    log.map(function(e){return e.d;}),
+    function(v){ return v.toFixed(0); });
+  var n=document.getElementById('wNote');
+  if(log.length>=2){
+    var d=(log[log.length-1].v-log[0].v).toFixed(1);
+    n.textContent=(d<0?'Down '+Math.abs(d):d>0?'Up '+d:'Flat')+' lb over '+log.length+' entries.';
+  } else { n.textContent='Log entries to see your trend.'; }
+}
+
+function renderRatio(){
+  var log=data.waistLog;
+  var lw=log.length?log[log.length-1].v:null;
+  var ratio=(lw!==null&&data.height)?lw/data.height:null;
+  var el=document.getElementById('rNow');
+  el.textContent = ratio!==null?ratio.toFixed(3):'--';
+  el.style.color = ratio===null?'var(--ink)':(ratio<ARMY_STD?'var(--green)':'var(--red)');
+  document.getElementById('rTgt').innerHTML = data.targetRatio
+    ? 'your target <b>'+Number(data.targetRatio).toFixed(3)+'</b>'
+    : 'target not set — tap to set';
+  var n=document.getElementById('rNote');
+  if(!data.height){ n.textContent='Set height in Settings, then log a waist measurement.'; }
+  else if(ratio===null){ n.textContent='Log a waist measurement to see your ratio.'; }
+  else{
+    var m=(ARMY_STD-ratio).toFixed(3);
+    n.textContent = ratio<ARMY_STD ? m+' under the Army 0.550 standard.'
+                                   : Math.abs(m)+' over the Army 0.550 standard.';
+  }
+  if(!data.height){ spark('rSpark',[],[]); return; }
+  var refs=[{v:ARMY_STD,l:'ARMY 0.550',c:'#8A6060'}];
+  if(data.targetRatio) refs.push({v:Number(data.targetRatio),l:'TARGET',c:'#5A6B52'});
+  spark('rSpark', log.map(function(e){return e.v/data.height;}), refs,
+    log.map(function(e){return e.d;}),
+    function(v){ return v.toFixed(3); });
+}
+
+function pct(ev){
+  var log=data.eventLogs[ev.key]||[], tgt=data.targets[ev.key];
+  if(!log.length||!tgt) return null;
+  var cur=isTime(ev.unit)?toSec(log[log.length-1].v):parseFloat(log[log.length-1].v);
+  var t=isTime(ev.unit)?toSec(tgt):parseFloat(tgt);
+  if(!cur||!t) return null;
+  return Math.max(0, Math.min(ev.higher?(cur/t)*100:(t/cur)*100, 150));
+}
+
+function miniTrend(ev){
+  var log=data.eventLogs[ev.key]||[];
+  if(log.length<2) return '';
+  var vals=log.map(function(e){ return isTime(ev.unit)?toSec(e.v):parseFloat(e.v); });
+  var tgt=data.targets[ev.key];
+  var tv=tgt?(isTime(ev.unit)?toSec(tgt):parseFloat(tgt)):null;
+  var all=vals.slice(); if(tv) all.push(tv);
+  var min=Math.min.apply(null,all), max=Math.max.apply(null,all);
+  var pad=(max-min)*0.2||1; min-=pad; max+=pad;
+  var range=max-min||1;
+  var W=280,H=54,P=4;
+  function x(i){ return P+(i/(vals.length-1))*(W-P*2); }
+  function y(v){ return H-P-((v-min)/range)*(H-P*2); }
+  var pts=vals.map(function(v,i){ return x(i).toFixed(1)+','+y(v).toFixed(1); }).join(' ');
+  var out='';
+  if(tv){
+    var ty=y(tv).toFixed(1);
+    out+='<line x1="0" y1="'+ty+'" x2="'+W+'" y2="'+ty+'" stroke="#5A6B52" stroke-width="1" stroke-dasharray="3,3"/>';
+    out+='<text x="'+(W-2)+'" y="'+(ty-3)+'" fill="#5A6B52" font-size="7.5" font-family="monospace" text-anchor="end">TARGET</text>';
+  }
+  out+='<polyline points="'+pts+'" fill="none" stroke="#9FC26E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+  vals.forEach(function(v,i){
+    out+='<circle cx="'+x(i).toFixed(1)+'" cy="'+y(v).toFixed(1)+'" r="'+(i===vals.length-1?3:2)+'" fill="'+(i===vals.length-1?'#EAEDEA':'#9FC26E')+'"/>';
+  });
+  return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="54" style="margin-top:10px;overflow:visible">'+out+'</svg>';
+}
+
+function renderEvents(){
+  document.getElementById('events').innerHTML = EVENTS.map(function(ev){
+    var log=data.eventLogs[ev.key]||[];
+    var latest=log.length?log[log.length-1].v:null;
+    var tgt=data.targets[ev.key], p=pct(ev);
+    var color=p===null?'var(--soft)':(p>=100?'var(--green)':'var(--amber)');
+    var hist=log.slice(-4).map(function(e){return esc(e.v);}).join(' → ');
+    return '<div class="ev">'+
+      '<div class="ev-top"><div class="ev-name">'+ev.name+'</div>'+
+      '<div><div class="ev-val" style="color:'+color+'">'+(latest!==null?esc(latest):'—')+'</div>'+
+      '<div class="ev-pct">'+(p!==null?Math.round(p)+'% of target':'no target')+'</div></div></div>'+
+      (p!==null?'<div class="track"><div class="fill" style="width:'+Math.min(p,100)+'%"></div></div>':'')+
+      miniTrend(ev)+
+      '<div class="ev-tgt" data-target="'+ev.key+'">'+
+        (tgt?'target <b>'+esc(tgt)+' '+ev.unit+'</b> — tap to change':'tap to set your target')+'</div>'+
+      (hist?'<div class="hist">Recent: '+hist+'<span class="del" data-undo="'+ev.key+'">undo last</span></div>':'')+
+      '<div class="inrow"><input type="text" id="in-'+ev.key+'" placeholder="Log '+(isTime(ev.unit)?'time (mm:ss)':ev.unit)+'">'+
+      '<button data-log="'+ev.key+'">LOG</button></div></div>';
+  }).join('');
+}
+
+function renderAll(){
+  try{renderClock();}catch(e){console.error(e);}
+  try{renderWeight();}catch(e){console.error(e);}
+  try{renderRatio();}catch(e){console.error(e);}
+  try{renderRadar();}catch(e){console.error(e);}
+  try{renderEvents();}catch(e){console.error(e);}
+}
+
+/* ---------- actions ---------- */
+function logWeight(){
+  var i=document.getElementById('wIn'), v=parseFloat(i.value);
+  if(!v){ toast('Enter a weight first', true); return; }
+  data.weightLog.push({d:today(), v:v});
+  if(save()){ i.value=''; toast('✓ Logged'); } else { data.weightLog.pop(); }
+  renderWeight();
+}
+function logWaist(){
+  var i=document.getElementById('waistIn'), v=parseFloat(i.value);
+  if(!v){ toast('Enter a waist measurement first', true); return; }
+  if(!data.height){ toast('Set your height in Settings first', true); return; }
+  data.waistLog.push({d:today(), v:v});
+  if(save()){ i.value=''; toast('✓ Logged'); } else { data.waistLog.pop(); }
+  renderRatio();
+}
+function logEvent(key){
+  var i=document.getElementById('in-'+key), v=i.value.trim();
+  if(!v){ toast('Enter a value first', true); return; }
+  if(!data.eventLogs[key]) data.eventLogs[key]=[];
+  data.eventLogs[key].push({d:today(), v:v});
+  if(save()){ toast('✓ Logged'); } else { data.eventLogs[key].pop(); }
+  renderEvents(); renderRadar();
+}
+function undoEvent(key){
+  if(!data.eventLogs[key] || !data.eventLogs[key].length) return;
+  var removed = data.eventLogs[key].pop();
+  if(save()){ toast('Removed ' + removed.v); } else { data.eventLogs[key].push(removed); }
+  renderEvents(); renderRadar();
+}
+
+/* ---------- modals ---------- */
+function closeModal(){ document.getElementById('modal').innerHTML=''; }
+
+function openSettings(){
+  document.getElementById('modal').innerHTML=
+    '<div class="modal-bg" id="mbg"><div class="modal">'+
+    '<h3>Settings</h3>'+
+    '<label>Test date</label><input type="date" id="sDate" value="'+(data.testDate||'')+'">'+
+    '<label>Height (inches)</label><input type="number" id="sHeight" step="0.1" inputmode="decimal" value="'+(data.height||'')+'">'+
+    '<label>Target weight (lbs)</label><input type="number" id="sWeight" step="0.1" inputmode="decimal" value="'+(data.targetWeight||'')+'">'+
+    '<label>Target waist/height ratio (Army standard 0.550)</label><input type="number" id="sRatio" step="0.001" inputmode="decimal" value="'+(data.targetRatio||'')+'">'+
+    '<div class="macts"><button class="bs" id="mCancel">Cancel</button>'+
+    '<button class="bp" id="mSave">Save</button></div></div></div>';
+  document.getElementById('mbg').addEventListener('click', function(e){ if(e.target.id==='mbg') closeModal(); });
+  document.getElementById('mCancel').addEventListener('click', closeModal);
+  document.getElementById('mSave').addEventListener('click', function(){
+    var prev=JSON.stringify(data);
+    data.testDate=document.getElementById('sDate').value||null;
+    var h=document.getElementById('sHeight').value; data.height=h?parseFloat(h):null;
+    var w=document.getElementById('sWeight').value; data.targetWeight=w?parseFloat(w):null;
+    var r=document.getElementById('sRatio').value; data.targetRatio=r?parseFloat(r):null;
+    if(save()){ closeModal(); toast('✓ Saved'); renderAll(); }
+    else { data=JSON.parse(prev); }
+  });
+}
+
+function openTarget(key){
+  var ev=EVENTS.filter(function(e){return e.key===key;})[0];
+  document.getElementById('modal').innerHTML=
+    '<div class="modal-bg" id="mbg2"><div class="modal">'+
+    '<h3>Target — '+ev.name+'</h3>'+
+    '<label>Your target ('+(isTime(ev.unit)?'format mm:ss':ev.unit)+')</label>'+
+    '<input type="text" id="tVal" value="'+(data.targets[key]?esc(data.targets[key]):'')+'" placeholder="'+(isTime(ev.unit)?'e.g. 2:00':'e.g. 40')+'">'+
+    '<div class="macts"><button class="bs" id="tCancel">Cancel</button>'+
+    '<button class="bp" id="tSave">Save</button></div></div></div>';
+  document.getElementById('mbg2').addEventListener('click', function(e){ if(e.target.id==='mbg2') closeModal(); });
+  document.getElementById('tCancel').addEventListener('click', closeModal);
+  document.getElementById('tSave').addEventListener('click', function(){
+    var v=document.getElementById('tVal').value.trim();
+    if(!v){ toast('Enter a target first', true); return; }
+    var prev=data.targets[key];
+    data.targets[key]=v;
+    if(save()){ closeModal(); toast('✓ Saved'); renderEvents(); renderRadar(); }
+    else { if(prev===undefined) delete data.targets[key]; else data.targets[key]=prev; }
+  });
+}
+
+/* ---------- backup ---------- */
+function doExport(){
+  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url; a.download='aft-tracker-backup-'+today()+'.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  toast('✓ Backup downloaded');
+}
+function doImport(){
+  var inp=document.createElement('input');
+  inp.type='file'; inp.accept='application/json,.json';
+  inp.addEventListener('change', function(){
+    var f=inp.files[0]; if(!f) return;
+    var fr=new FileReader();
+    fr.onload=function(){
+      try{
+        var p=JSON.parse(fr.result);
+        Object.keys(p).forEach(function(k){ data[k]=p[k]; });
+        if(save()){ toast('✓ Backup restored'); renderAll(); }
+      }catch(e){ toast('⚠ Could not read that file', true); }
+    };
+    fr.readAsText(f);
+  });
+  inp.click();
+}
+
+/* ---------- wiring ---------- */
+function boot(){
+  canSave = checkStorage();
+  if(!canSave){
+    var w=document.getElementById('warn');
+    w.className='warn show';
+    w.textContent='⚠ This browser is blocking local storage, so nothing will be saved. '+
+      'This usually means the file is being previewed rather than opened. Download the file and open it '+
+      'directly in Safari or Chrome, and make sure private browsing is off.';
+  } else {
+    load();
+  }
+  renderAll();
+  setInterval(renderClock, 30000);
+
+  document.getElementById('gearBtn').addEventListener('click', openSettings);
+  document.getElementById('dateLab').addEventListener('click', openSettings);
+  document.getElementById('wTgt').addEventListener('click', openSettings);
+  document.getElementById('rTgt').addEventListener('click', openSettings);
+  document.getElementById('wBtn').addEventListener('click', logWeight);
+  document.getElementById('waistBtn').addEventListener('click', logWaist);
+  document.getElementById('exportBtn').addEventListener('click', doExport);
+  document.getElementById('importBtn').addEventListener('click', doImport);
+
+  document.getElementById('events').addEventListener('click', function(e){
+    var t=e.target.closest('[data-log]');
+    if(t){ logEvent(t.getAttribute('data-log')); return; }
+    var g=e.target.closest('[data-target]');
+    if(g){ openTarget(g.getAttribute('data-target')); return; }
+    var u=e.target.closest('[data-undo]');
+    if(u){ undoEvent(u.getAttribute('data-undo')); return; }
+  });
+
+  document.getElementById('wIn').addEventListener('keydown', function(e){ if(e.key==='Enter') logWeight(); });
+  document.getElementById('waistIn').addEventListener('keydown', function(e){ if(e.key==='Enter') logWaist(); });
+}
+
+if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', boot); }
+else { boot(); }
+
+})();
+</script>
+</body>
+</html>
